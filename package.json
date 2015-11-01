@@ -36,7 +36,9 @@
     "istanbul": "^0.3.22",
     "jshint": "^2.8.0",
     "mocha": "^2.3.3",
-    "pre-git": "^0.6.2"
+    "pre-git": "^0.6.2",
+    "sinon": "^1.17.2",
+    "virtual-serialport": "^0.1.2"
   },
   "pre-push": [
     "npm test"

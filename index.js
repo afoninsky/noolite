@@ -73,14 +73,14 @@ Driver.prototype.send = function (channel, command, cfg, callback) {
   arr[2] = cmd;
 
   if(cmd === commands.SET) {
-    var payload = cfg.payload;
-    if(!_.isArray(payload)) {
+    var brightness = cfg.brightness;
+    if(!_.isArray(brightness)) {
       return callback(new Error('please specify array in cfg.brightness'));
     }
     arr[3] = 1;
-    var start = 6, stop = start + payload.length;
+    var start = 6, stop = start + brightness.length;
     for(var i = start; i <= stop; i++) {
-      arr[i] = payload[i - start];
+      arr[i] = brightness[i - start];
     }
   }
 

@@ -37,6 +37,20 @@ driver.openAsync().then(function() {
 ...
 ```
 
+## Client interface
+You can send command directly from command line
+
+    $ ./cli
+    [0]>
+    off                    start_smooth_decrease  on                     start_smooth_increase  switch
+    reverse_smooth         set                    run_scenario           save_scenario          unbind
+    stop_smooth            bind                   channel
+
+    [0]> channel 1 # switch to device #2
+    [1]> on # send command 'turn on the light'
+    [1]> off # send command 'turn off the light'
+
+
 ## Available commands
 
 `OFF`, `START_SMOOTH_DECREASE`, `ON`, `START_SMOOTH_INCREASE`, `SWITCH`, `REVERSE_SMOOTH`, `SET`, `RUN_SCENARIO`, `SAVE_SCENARIO`, `UNBIND`, `STOP_SMOOTH`, `BIND`

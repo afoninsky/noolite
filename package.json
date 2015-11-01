@@ -1,0 +1,44 @@
+{
+  "name": "noolite-uart",
+  "version": "0.0.1",
+  "description": "node.js driver for МТ1132 transmitter",
+  "main": "index.js",
+  "scripts": {
+    "coveralls": "istanbul cover _mocha --report lcovonly -- -R spec && cat ./coverage/lcov.info | coveralls && rm -rf ./coverage",
+    "pretest": "jshint index.js",
+    "test": "istanbul cover _mocha --"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/afoninsky/noolite-uart.git"
+  },
+  "keywords": [
+    "iot",
+    "noolite",
+    "uart",
+    "serial",
+    "mt1132"
+  ],
+  "author": "Andrey 'vkfont' Afoninsky",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/afoninsky/noolite-uart/issues"
+  },
+  "homepage": "https://github.com/afoninsky/noolite-uart#readme",
+  "dependencies": {
+    "bluebird": "^3.0.5",
+    "lodash": "^3.10.1",
+    "serialport": "^2.0.2"
+  },
+  "devDependencies": {
+    "chai": "^3.3.0",
+    "coveralls": "^2.11.4",
+    "istanbul": "^0.3.22",
+    "jshint": "^2.8.0",
+    "mocha": "^2.3.3",
+    "pre-git": "^0.6.2"
+  },
+  "pre-push": [
+    "npm test"
+  ]
+}

@@ -14,14 +14,21 @@ Noolite = require('noolite-uart');
 // create driver instance
 driver = new Noolite({
   port: '/dev/ttyAMA0', // serial port
-  txTimeout: 500        // set to 'false' if RX pin not connected
+  txTimeout: 500        // default is 'false' = RX pin not connected
 });
 
 driver.open(function (err) {
   // sent command 'turn on the light' to first associated device
   driver.send(0, 'ON', function () {
     console.log('command sent');
-    // disconnect
+    driver.serial.close();
+  })
+});
+
+driver.open(function (err) {
+  // sent command 'dim the light to middle level'
+  driver.send(0, { command: 'SET', value: 100 }, function () {
+    console.log('command sent');
     driver.serial.close();
   })
 });
@@ -49,6 +56,7 @@ You can send command directly from command line
     [0]> channel 1 # switch to device #2
     [1]> on # send command 'turn on the light'
     [1]> off # send command 'turn off the light'
+    [1]> set 100 # send command 'dim the light to middle level'
 
 
 ## Available commands

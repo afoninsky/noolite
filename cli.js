@@ -5,7 +5,8 @@ var Driver = require('./');
 var readline = require('readline');
 
 var driver = new Driver({
-  port: process.argv[2]
+  port: process.argv[2],
+  txTimeout: false
 });
 
 var rl = readline.createInterface({
@@ -50,8 +51,14 @@ driver.openAsync().then(function () {
       break;
 
       default:
-      var text = items[0].toUpperCase();
-      driver.sendAsync(channel, text, function (err) {
+      var param = {
+          command: items[0].toUpperCase(),
+          value: items.slice(1).map(function (item) {
+            return parseInt(item, 10);
+          })
+        }
+
+      driver.sendAsync(channel, param, function (err) {
         if(err) {
           console.log('ERROR:', err.message);
         }

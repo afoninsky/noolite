@@ -68,8 +68,9 @@ describe('driver', function () {
   });
 
   it('send command with payload', function (done) {
-    driver.sendAsync(0, 'SET', {
-      brightness: [0, 0, 0]
+    driver.sendAsync(0, {
+      command: 'SET',
+      value: [0, 0, 0]
     }).then(function () {
       done();
     }).catch(done);
@@ -81,10 +82,5 @@ describe('driver', function () {
       done();
     }).catch(done);
   });
-
-  //
-  // it('', function () {});
-  // it('', function () {});
-  // it('', function () {});
 
 });

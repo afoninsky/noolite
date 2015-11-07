@@ -29,7 +29,7 @@ var Driver = function (cfg) {
 
   this.cfg = _.defaults(cfg || {}, {
     port: '/dev/ttyAMA0',
-    txTimeout: 500
+    txTimeout: false
   });
 
   this.serial = new SerialPort(this.cfg.port, {
@@ -52,35 +52,36 @@ Driver.prototype.open = function (callback) {
   }.bind(this));
 };
 
-Driver.prototype.send = function (channel, command, cfg, callback) {
-
-  if(typeof cfg === 'function') {
-    callback = cfg;
-    cfg = {};
+Driver.prototype.send = function (channel, param, callback) {
+  if(typeof param === 'string') {
+    param = { command: param };
   }
-  var cmd = commands[command];
+  param.command = param.command.toUpperCase();
+  var cmd = commands[param.command];
   if(typeof cmd === 'undefined') {
-    return callback(new Error('command type "'+command+'" not supported'));
+    return callback(new Error('command type "'+param.command+'" not supported'));
   }
   if(channel < 0 || channel > defaults.CHANNELS) {
     return callback(new Error('please specify channel in range 0..'+defaults.CHANNELS));
   }
 
   var arr = [defaults.START, defaults.MODE, 0, 0, 0, 0, 0, 0, 0, 0, 0, defaults.STOP];
-  if(cfg.mode) {
-    arr[1] = cfg.mode;
+  if(param.mode) {
+    arr[1] = param.mode;
   }
   arr[2] = cmd;
 
   if(cmd === commands.SET) {
-    var brightness = cfg.brightness;
-    if(!_.isArray(brightness)) {
-      return callback(new Error('please specify array in cfg.brightness'));
+    var value = param.value;
+    if(!_.isArray(value)) { value = [ value ]; }
+    if(isNaN(value[0]) || value[0] < 0 || value[0] > 255) {
+      // 35-155 for dim and 0-255 for rgb
+      return callback(new Error('please specify correct array in .value'));
     }
     arr[3] = 1;
-    var start = 6, stop = start + brightness.length;
+    var start = 6, stop = start + value.length;
     for(var i = start; i <= stop; i++) {
-      arr[i] = brightness[i - start];
+      arr[i] = value[i - start] || 0;
     }
   }
 

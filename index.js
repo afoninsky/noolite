@@ -78,7 +78,13 @@ Driver.prototype.send = function (channel, param, callback) {
       // 35-155 for dim and 0-255 for rgb
       return callback(new Error('please specify correct array in .value'));
     }
-    arr[3] = 1;
+    if(value.length === 1) {
+      arr[3] = 1;
+    } else if (value.length === 3) {
+      arr[3] = 3;
+    } else {
+      return callback(new Error('.value should have length 1 for brightness or length 3 for rgb'));
+    }
     var start = 6, stop = start + value.length;
     for(var i = start; i <= stop; i++) {
       arr[i] = value[i - start] || 0;

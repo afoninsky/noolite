@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/afoninsky/noolite-uart.git"
+    "url": "git+https://github.com/afoninsky/noolite.git"
   },
   "bin": {
     "noolite": "./noolite.js"

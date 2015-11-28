@@ -1,10 +1,9 @@
 {
-  "name": "noolite-uart",
-  "version": "1.0.2",
-  "description": "node.js driver for МТ1132 transmitter",
+  "name": "noolite",
+  "version": "2.0.0",
+  "description": "node.js driver for noolite devices",
   "main": "index.js",
   "scripts": {
-    "coveralls": "istanbul cover _mocha --report lcovonly -- -R spec && cat ./coverage/lcov.info | coveralls && rm -rf ./coverage",
     "pretest": "jshint index.js",
     "test": "istanbul cover _mocha --"
   },
@@ -12,22 +11,31 @@
     "type": "git",
     "url": "git+https://github.com/afoninsky/noolite-uart.git"
   },
+  "bin": {
+    "noolite": "./noolite.js"
+  },
   "keywords": [
     "iot",
     "noolite",
     "uart",
+    "hid",
     "serial",
-    "mt1132"
+    "mt1132",
+    "pc118",
+    "pc1116",
+    "pc1132",
+    "rx2164"
   ],
   "author": "Andrey 'vkfont' Afoninsky",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/afoninsky/noolite-uart/issues"
+    "url": "https://github.com/afoninsky/noolite/issues"
   },
-  "homepage": "https://github.com/afoninsky/noolite-uart#readme",
+  "homepage": "https://github.com/afoninsky/noolite#readme",
   "dependencies": {
     "bluebird": "^3.0.5",
     "lodash": "^3.10.1",
+    "node-hid": "^0.5.1",
     "serialport": "^2.0.2"
   },
   "devDependencies": {
@@ -36,9 +44,7 @@
     "istanbul": "^0.3.22",
     "jshint": "^2.8.0",
     "mocha": "^2.3.3",
-    "pre-git": "^0.6.2",
-    "sinon": "^1.17.2",
-    "virtual-serialport": "^0.1.2"
+    "pre-git": "^0.6.2"
   },
   "pre-push": [
     "npm test"

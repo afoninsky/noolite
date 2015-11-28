@@ -87,26 +87,15 @@ Protocol.prototype.event = function () {
 
 // create packet for mt1132 device
 // http://www.noo.com.by/assets/files/PDF/MT1132.pdf
-Protocol.prototype._mt1132 = function (channel, _command, value) {
+Protocol.prototype._mt1132 = function (channel, command, value) {
 
-  // ensure channel is supported
-  channel = parseInt(channel, 10);
-  if(isNaN(channel) || channel < 0 || channel > this.maxChannels) {
-      throw new Error(util.format('invalid channel "%s" (range is 0..%s)', channel, this.maxChannels));
-  }
-
-  // ensure command is supported
-  var command = commands[(_command || '').toString().toUpperCase()];
-  if(!command) {
-    throw new Error(util.format('invalid command "%s"', _command));
-  }
-
-  var arr = [mt1132.START_BYTE, this.mode, command, 0, 0, channel, 0, 0, 0, 0, 0, mt1132.STOP_BYTE];
+  var res = this._parseInput(channel, command);
+  var arr = [mt1132.START_BYTE, this.mode, res.command, 0, 0, res.channel, 0, 0, 0, 0, 0, mt1132.STOP_BYTE];
 
   // set specific command bytes
-  if(command === commands.SET) {
+  if(res.command === this.commands.SET) {
     this._setDimPayload(arr, value, 3, 6);
-  } else if(command >= commands.START_SMOOTH) {
+  } else if(res.command >= this.commands.START_SMOOTH) {
     arr[3] = 4;
   }
 
@@ -118,8 +107,32 @@ Protocol.prototype._mt1132 = function (channel, _command, value) {
 
 // create packet for pc11xx devices
 // http://www.noo.com.by/assets/files/software/PC11xx_HID_API.pdf
-Protocol.prototype._pc11xx = function (channel, _command, value) {
+Protocol.prototype._pc11xx = function (channel, command, value) {
 
+  var res = this._parseInput(channel, command);
+  // mode, command, format, 0, channel, r, g, b
+  var arr = [this.mode, res.command, 0, 0, res.channel, 0, 0, 0];
+
+  // set specific command bytes
+  if(res.command === this.commands.SET) {
+    this._setDimPayload(arr, value, 2, 5);
+  } else if(res.command >= this.commands.START_SMOOTH) {
+    arr[2] = 4;
+  }
+
+  return arr;
+};
+
+// http://www.noo.com.by/assets/files/software/RX2164_HID_API.pdf
+Protocol.prototype._rx2164Out = function (channel, command) {
+
+  var res = this._parseInput(channel, command);
+
+  var arr = [res.command, res.channel, 0, 0, 0, 0, 0, 0];
+  return arr;
+};
+
+Protocol.prototype._parseInput = function (channel, _command) {
   // ensure channel is supported
   channel = parseInt(channel, 10);
   if(isNaN(channel) || channel < 0 || channel > this.maxChannels) {
@@ -127,22 +140,14 @@ Protocol.prototype._pc11xx = function (channel, _command, value) {
   }
 
   // ensure command is supported
-  var command = commands[(_command || '').toString().toUpperCase()];
-  if(!command) {
+  var command = this.commands[(_command || '').toString().toUpperCase()];
+  if(typeof command === 'undefined') {
     throw new Error(util.format('invalid command "%s"', _command));
   }
-
-  // mode, command, format, 0, channel, r, g, b
-  var arr = [this.mode, command, 0, 0, channel, 0, 0, 0];
-
-  // set specific command bytes
-  if(command === commands.SET) {
-    this._setDimPayload(arr, value, 2, 5);
-  } else if(command >= commands.START_SMOOTH) {
-    arr[2] = 4;
+  return {
+    channel: channel,
+    command: command
   }
-
-  return arr;
 };
 
 Protocol.prototype._setDimPayload = function (arr, value, formatAddr, payloadAddr) {
@@ -169,25 +174,6 @@ Protocol.prototype._setDimPayload = function (arr, value, formatAddr, payloadAdd
     return;
   }
   throw new Error('incorrect value (integer or 3-dim array of integers expected)');
-};
-
-// http://www.noo.com.by/assets/files/software/RX2164_HID_API.pdf
-Protocol.prototype._rx2164Out = function (channel, _command) {
-
-  // ensure channel is supported
-  channel = parseInt(channel, 10);
-  if(isNaN(channel) || channel < 0 || channel > this.maxChannels) {
-      throw new Error(util.format('invalid channel "%s" (range is 0..%s)', channel, this.maxChannels));
-  }
-
-  // ensure command is supported
-  var command = rxCommands[(_command || '').toString().toUpperCase()];
-  if(!command) {
-    throw new Error(util.format('invalid command "%s"', _command));
-  }
-
-  var arr = [command, channel, 0, 0, 0, 0, 0, 0];
-  return arr;
 };
 
 // http://www.noo.com.by/assets/files/software/RX2164_HID_API.pdf

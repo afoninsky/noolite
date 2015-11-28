@@ -34,6 +34,8 @@ Receive incoming message. rx2164 only.
 
 ## Usage example
 
+    npm install noolite
+
 ```javascript
 'use strict';
 Noolite = require('noolite');

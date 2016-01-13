@@ -76,6 +76,13 @@ You can send command directly from command line
 
 Please refer to the module documentation for the extended use. Set of command may be various.
 
+## Hint
+To have access on device from common user add rule to udev. For example to /etc/udev/rules.d/50-noolite.rules next line:
+ATTRS{idVendor}=="16c0", ATTRS{idProduct}=="05df", SUBSYSTEMS=="usb", ACTION=="add", MODE="0666", GROUP="plugdev"
+And add your user to plugdev group:
+sudo usermod <user> -a -G plugdev
+
+
 ## License
 
 Copyright (c) 2015. Licensed under the Apache 2.0 license.

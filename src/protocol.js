@@ -67,7 +67,10 @@ function createProtocol(deviceName) {
     }
 
     const commands = tx ? txCommands : rxCommands
-    const actualCommand = commands[(command || '').toString().toUpperCase()] || throwError(new Error(`invalid command "${command}"`))
+    const actualCommand = commands[(command || '').toString().toUpperCase()]
+    if (typeof actualCommand === 'undefined') {
+      throwError(new Error(`invalid command "${command}"`))
+    }
 
     return {
       channel: channel,

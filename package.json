@@ -30,13 +30,12 @@
   },
   "homepage": "https://github.com/afoninsky/noolite#readme",
   "dependencies": {
-    "bluebird": "^3.1.1",
-    "lodash": "^4.17.4",
+    "bluebird": "^3.4.7",
     "node-hid": "^0.5.1",
     "serialport": "^4.0.7"
   },
   "devDependencies": {
-    "ava": "^0.18.1",
+    "ava": "^0.18.2",
     "ava-spec": "^1.1.0",
     "babel-register": "^6.23.0",
     "eslint": "^3.15.0"

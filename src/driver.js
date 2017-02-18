@@ -8,20 +8,18 @@
 const SerialPort = require('serialport')
 const { HID } = require('node-hid')
 const Promise = require('bluebird')
-const { EventEmitter } = require('events')
-const { inherits } = require('util')
-
-const { devices, createProtocol } = require('./protocol')
-const { throwError } = require('./utils')
+const { createProtocol } = require('./protocol')
 
 const usbDevices = ['pc118', 'pc1116', 'pc1132', 'rx2164']
 
 const defaultConfig = {
-    device: null,         // device name
-    port: '/dev/ttyAMA0', // mt1132: default port
-    vid: 5824,            // pc11xx_hid, rx2164: HID vendor id
-    pid: null,            // pc11xx_hid, rx2164: HID product id
-    readInterval: 200,
+  device: null,         // device name
+  port: '/dev/ttyAMA0', // mt1132: default port
+  vid: 5824,            // pc11xx_hid, rx2164: HID vendor id
+  pid: null,            // pc11xx_hid, rx2164: HID product id
+  readInterval: 200,
+  onError: null,
+  onData: null
 }
 
 
@@ -30,6 +28,7 @@ const createDriver = (userConfig = {}) => {
 
   const proto = createProtocol(config.device)
   const isHID = usbDevices.includes(config.device)
+
   let lastState, timer, device
 
   if (isHID && !config.pid) {
@@ -37,10 +36,13 @@ const createDriver = (userConfig = {}) => {
   }
 
   const publicMethods = {}
-  inherits(publicMethods, EventEmitter)
 
   const emitError = err => {
-    publicMethods.emit('error', err)
+    if (config.onError) {
+      return config.onError(err)
+    } else {
+      throw err
+    }
   }
 
 
@@ -50,7 +52,7 @@ const createDriver = (userConfig = {}) => {
     const { state, channel, command } = proto.recv(buffer)
     if (state !== lastState) {
       lastState = state
-      publicMethods.emit('data', channel, command)
+      config.onData(channel, command)
     }
   }
 
@@ -58,7 +60,6 @@ const createDriver = (userConfig = {}) => {
 
     const cb = err => {
       if (!err) {
-        device.on('error', emitError)
         if (proto.recv) { // able to read events from device
           device.setNonBlocking(1)
           const buffer = device.getFeatureReport(0xf2, 17)
@@ -66,6 +67,8 @@ const createDriver = (userConfig = {}) => {
           lastState = state
           timer = setInterval(readData, config.readInterval);
         }
+      } else {
+        device.removeListener('error', emitError)
       }
       callback(err)
     }
@@ -73,18 +76,21 @@ const createDriver = (userConfig = {}) => {
     if (isHID) { // usb device
       try {
         device = new HID(config.vid, config.pid)
+        device.on('error', emitError)
       } catch (err) {
         return cb(err)
       }
       return cb()
     }
 
-    device = new SerialPort(cfg.port, { // serial device
+    device = new SerialPort(config.port, { // serial device
       baudrate: 9600
     })
 
     device.once('open', cb)
+    device.on('error', emitError)
     device.open(err => {
+      console.log(2)
       if (err) {
         device.removeListener('open', cb)
         cb(err)
@@ -127,7 +133,11 @@ const createDriver = (userConfig = {}) => {
     }
   }
 
-  return Promise.promisify(publicMethods)
+  const promisifiedMethods = {}
+  for (let name in publicMethods) {
+    promisifiedMethods[name] = Promise.promisify(publicMethods[name])
+  }
+  return promisifiedMethods
 }
 
 module.exports = { createDriver }

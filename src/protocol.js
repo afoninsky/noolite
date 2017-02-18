@@ -53,10 +53,10 @@ const mt1132 = {
   STOP_BYTE: 170
 }
 
-module.exports = deviceName => {
+function createProtocol(deviceName) {
 
-  const deviceInfo = devices[deviceName] || throwError(new Error(`device ${deviceName} is not supported`))
-  const [ maxChannels, /*avaiableSlots*/, internalSendName, internalRecvName ] = deviceInfo
+  const deviceInfo = devices[deviceName] || throwError(new Error(`device ${deviceName} is not supported, valid devices are: ${Object.keys(devices)}`))
+  const [ maxChannels, /*availableSlots*/, internalSendName, internalRecvName ] = deviceInfo
   const deviceMode = 80 // tx mode, repeat command 2 times, 1000bps
 
   // ensure all arguments are correct
@@ -162,18 +162,21 @@ module.exports = deviceName => {
 
   }
 
-  return {
+  const publicMethods = {}
 
-    // translate readable command to array of bytes (write to device)
-    send: (...params) => {
-      const [ inputChannel, inputCommand, value ] = params
-      const { channel, command } = parseInput(inputChannel, inputCommand, internalSendName !== 'rx2164Out')
-      return specification[internalSendName](channel, command, value) || throwError(new Error('.send is not supported by this device'))
-    },
+  publicMethods.send = (...params) => { // translate readable command to array of bytes (write to device)
+    const [ inputChannel, inputCommand, value ] = params
+    const { channel, command } = parseInput(inputChannel, inputCommand, internalSendName !== 'rx2164Out')
+    return specification[internalSendName](channel, command, value) || throwError(new Error('.send is not supported by this device'))
+  }
 
-    // translate array of bytes into event (readed from device)
-    recv: (...params) => {
+  if (internalRecvName) {
+    publicMethods.recv = (...params) => { // translate array of bytes into event (readed from device)
       return specification[internalRecvName](...params) || throwError(new Error('.recv is not supported by this device'))
     }
   }
+
+  return publicMethods
 }
+
+module.exports = { createProtocol, devices }

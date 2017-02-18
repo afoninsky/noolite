@@ -1,13 +1,9 @@
 {
   "name": "noolite",
-  "version": "2.0.2",
+  "version": "3.0.0",
   "description": "node.js driver for noolite devices",
   "main": "index.js",
-  "scripts": {
-    "pretest": "jshint index.js",
-    "test": "istanbul cover _mocha --",
-    "commit": "commit-wizard"
-  },
+  "scripts": {},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/afoninsky/noolite.git"
@@ -35,28 +31,11 @@
   "homepage": "https://github.com/afoninsky/noolite#readme",
   "dependencies": {
     "bluebird": "^3.1.1",
-    "lodash": "^3.10.1",
+    "lodash": "^4.17.4",
     "node-hid": "^0.5.1",
-    "serialport": "^2.0.6"
+    "serialport": "^4.0.7"
   },
   "devDependencies": {
-    "chai": "^3.4.1",
-    "coveralls": "^2.11.6",
-    "istanbul": "^0.4.2",
-    "jshint": "^2.9.1-rc2",
-    "mocha": "^2.3.4",
-    "pre-git": "^3.3.0"
-  },
-  "pre-push": [
-    "npm test"
-  ],
-  "config": {
-    "pre-git": {
-      "commit-msg": [],
-      "pre-commit": [],
-      "pre-push": [],
-      "post-commit": [],
-      "post-merge": []
-    }
+    "eslint": "^3.15.0"
   }
 }

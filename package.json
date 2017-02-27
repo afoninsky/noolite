@@ -3,13 +3,12 @@
   "version": "3.0.1",
   "description": "node.js driver for noolite devices",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "test": "ava"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/afoninsky/noolite.git"
-  },
-  "bin": {
-    "noolite": "./noolite.js"
   },
   "keywords": [
     "iot",
@@ -21,7 +20,9 @@
     "pc118",
     "pc1116",
     "pc1132",
-    "rx2164"
+    "rx2164",
+    "pt111",
+    "pt112"
   ],
   "author": "Andrey 'vkfont' Afoninsky",
   "license": "Apache-2.0",

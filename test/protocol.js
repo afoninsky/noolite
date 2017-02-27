@@ -1,5 +1,3 @@
-// node --harmony_async_await node_modules/.bin/ava src/micro/fulltext/tests.js
-
 import { describe } from 'ava-spec'
 import { createProtocol } from '../src/protocol'
 

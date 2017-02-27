@@ -133,8 +133,7 @@ function createProtocol(deviceName) {
     // [0..7 (temp1), 8..11 (battery, sensorType), 12..15 (temp2), 16-23 (humidity]
     const v1str = pad(v1.toString(2), 8)
     const v2str = pad(v2.toString(2), 8)
-
-    const batteryLow = !!v2str[0]
+    const batteryLow = v2str[0] === '1'
 
     const temperatureBits = v2str.substring(4, 8) + v1str
     const temperature = temperatureBits[0] === '0'

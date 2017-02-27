@@ -7,7 +7,7 @@ NOTE: this driver is not compatible with previous version, and require node with
 
 [noolite](http://www.noo.com.by/) is a set of IoT devices to control power (lights, etc over 433,92 radio). This driver can send and receive commands using USB sticks and UART device.
 
-## Usage example
+## Usage examples
 
     npm install noolite
 
@@ -26,7 +26,7 @@ const driver = createDriver({
 })()
 ```
 
-```
+```javascript
 const driver = createDriver({
   device: 'rx2164',
   onError: err => {

@@ -28,7 +28,10 @@ const txCommands = {
   SENSOR: 21
 }
 
-const txCommandKeys = Object.keys(txCommands)
+const txCommandKeys = Object.keys(txCommands).reduce((obj, name) => {
+  obj[txCommands[name]] = name
+  return obj
+}, {})
 
 // rx2164 specific commands
 const rxCommands = {
@@ -80,7 +83,6 @@ function createProtocol(deviceName) {
 
   const updateDimPayload = (arr, inputValue, formatAddr, payloadAddr) => {
     const value = Array.isArray(inputValue) ? inputValue : [ inputValue ]
-
     switch (value.length) {
 
       case 1: // set common brightness
@@ -88,7 +90,9 @@ function createProtocol(deviceName) {
         if(isNaN(dim) || dim < 35 || dim > 155) {
           throw new Error('please specify correct dim value in range 35..155')
         }
-        return arr[payloadAddr] = dim
+        arr[formatAddr] = 1
+        arr[payloadAddr] = dim
+        return
 
       case 3: // set brightness on rgb channels
         const stop = payloadAddr + value.length - 1
@@ -99,11 +103,53 @@ function createProtocol(deviceName) {
           }
           arr[i] = rgb
         }
-        return arr[formatAddr] = 3
+        arr[formatAddr] = 3
+        return
 
       default:
         throw new Error('incorrect value (integer or 3-dim array of integers expected)')
 
+    }
+  }
+
+  const bit2bytes = values => {
+    const bits = []
+    values.forEach(octet => {
+      for (let i = 7; i >= 0; i--) {
+        bits.push(octet & (1 << i) ? 1 : 0)
+      }
+    })
+    return bits
+  }
+
+  const pad = (n, width, z) =>{
+    z = z || '0'
+    n = n + ''
+    return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n
+  }
+
+  const extractSensorValues = ([ v1, v2, v3 ]) => {
+    // http://www.noo.com.by/assets/files/PDF/nooLite%20API_v1.0.pdf
+    // [0..7 (temp1), 8..11 (battery, sensorType), 12..15 (temp2), 16-23 (humidity]
+    const v1str = pad(v1.toString(2), 8)
+    const v2str = pad(v2.toString(2), 8)
+
+    const batteryLow = !!v2str[0]
+
+    const temperatureBits = v2str.substring(4, 8) + v1str
+    const temperature = temperatureBits[0] === '0'
+      ? parseInt(temperatureBits, 2) / 10
+      : (4096 - parseInt(temperatureBits, 2)) / 10 * -1
+
+    const sensorTypeNum = parseInt(v2str.substring(1, 4), 2)
+    switch (sensorTypeNum) {
+      case 1:
+        return ['pt112', batteryLow, temperature] // name, isBatteryLow, temperature
+      case 2:
+        return ['pt111', batteryLow, temperature, v3] // name, isBatteryLow, temperature, humidity
+      default:
+        console.warn(`unknown sensor type: ${sensorTypeNum}`)
+        return []
     }
   }
 
@@ -146,19 +192,25 @@ function createProtocol(deviceName) {
 
     // http://www.noo.com.by/assets/files/software/RX2164_HID_API.pdf
     rx2164In: arr => {
+      const commandText = txCommandKeys[arr[2]]
+      if (!commandText) {
+        return console.warn(`command ${arr[2]} not supported: ${arr}`)
+      }
       const data = {
         state: arr[0] & 63,
         isBinding: !!(arr[0] & 64),
         channel: arr[1],
-        command: txCommandKeys[arr[2]],
-        commandNumeric: arr[2]
+        command: commandText,
+        raw: arr
       }
-
       if(arr[3]) {
         data.value = []
         for(let i = 4, end = i + arr[3]; i < end; i++) {
           data.value.push(arr[i])
         }
+      }
+      if (commandText === 'SENSOR') {
+        data.value = extractSensorValues(data.value)
       }
       return data
     }

@@ -49,10 +49,10 @@ const createDriver = (userConfig = {}) => {
   const readData = () => {
     // have no idea why we can read from rx2164 using .getFeatureReport but can't using .read
     const buffer = device.getFeatureReport(0xf2, 17)
-    const { state, channel, command } = proto.recv(buffer)
-    if (state !== lastState) {
-      lastState = state
-      config.onData(channel, command)
+    const result = proto.recv(buffer)
+    if (result.state !== lastState) {
+      lastState = result.state
+      config.onData(result)
     }
   }
 
@@ -90,7 +90,6 @@ const createDriver = (userConfig = {}) => {
     device.once('open', cb)
     device.on('error', emitError)
     device.open(err => {
-      console.log(2)
       if (err) {
         device.removeListener('open', cb)
         cb(err)

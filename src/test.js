@@ -5,7 +5,8 @@ const driver = createDriver({
 })
 
 driver.open().then(() => {
-  return driver.send(process.argv[2], process.argv[3])
+  console.log('>', process.argv[2], process.argv[3], process.argv[4])
+  return driver.send(process.argv[2], process.argv[3], process.argv[4])
 }).then(console.log)
 
 // const driver = createDriver({

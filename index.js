@@ -1,2 +1,1 @@
-'use strict';
-module.exports = require('./src/driver');
+module.exports = require('./src/driver').createDriver

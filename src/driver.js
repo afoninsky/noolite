@@ -1,5 +1,3 @@
-'use strict';
-
 /*
  * noolite (http://www.noo.com.by) device support
  * work with HID(usb) devices - pc11xx (tx), rx2164 (tx/rx)
@@ -7,138 +5,138 @@
  *
  */
 
-var _ = require('lodash');
-var SerialPort = require('serialport').SerialPort;
-var HID = require('node-hid');
-var Promise = require('bluebird');
-var EventEmitter = require('events').EventEmitter;
-var inherits = require('util').inherits;
-var Proto = require('./proto');
-var Dummy = require('./dummy');
+const SerialPort = require('serialport')
+const { HID } = require('node-hid')
+const Promise = require('bluebird')
+const { createProtocol } = require('./protocol')
 
-var usbDevices = ['pc118', 'pc1116', 'pc1132', 'rx2164'];
+const usbDevices = ['pc118', 'pc1116', 'pc1132', 'rx2164']
 
-var Driver = function (cfg) {
-  var devices = Proto.devices;
+const defaultConfig = {
+  device: null,         // device name
+  port: '/dev/ttyAMA0', // mt1132: default port
+  vid: 5824,            // pc11xx_hid, rx2164: HID vendor id
+  pid: null,            // pc11xx_hid, rx2164: HID product id
+  readInterval: 200,
+  onError: null,
+  onData: null
+}
 
-  this.cfg = _.defaults(cfg, {
-    device: null,         // device name
-    port: '/dev/ttyAMA0', // mt1132: default port
-    vid: 5824,            // pc11xx_hid, rx2164: HID vendor id
-    pid: null,            // pc11xx_hid, rx2164: HID product id
-    readInerval: 200,
-    debug: false          // run dummy device
-  });
 
-  if(devices.indexOf(cfg.device) === -1) {
-    throw new Error('unsupported device, valid are: ' + devices.join(', '));
+const createDriver = (userConfig = {}) => {
+  const config = Object.assign({}, defaultConfig, userConfig)
+
+  const proto = createProtocol(config.device)
+  const isHID = usbDevices.includes(config.device)
+
+  let lastState, timer, device
+
+  if (isHID && !config.pid) {
+    config.pid = config.device === 'rx2164' ? 1500 : 1503
   }
-  this.proto = new Proto(cfg.device);
 
-  this.isHID = usbDevices.indexOf(cfg.device) !== -1;
-  if(this.isHID && !this.cfg.pid) {
-    this.cfg.pid = cfg.device === 'rx2164' ? 1500 : 1503;
+  const publicMethods = {}
+
+  const emitError = err => {
+    if (config.onError) {
+      return config.onError(err)
+    } else {
+      throw err
+    }
   }
-  Promise.promisifyAll(this);
-  _.bindAll(this);
-};
 
-inherits(Driver, EventEmitter);
 
-Driver.prototype.emitError = function (err) {
-  this.emit('error', err);
-};
-
-Driver.prototype.readData = function () {
-  // have no idea why we can read from rx2164 using .getFeatureReport but can't using .read
-  var buffer = this.device.getFeatureReport(0xf2, 17),
-      data = this.proto.event(buffer);
-
-  if(data.state !== this._state) {
-    this._state = data.state;
-    this.emit('data', data.channel, data.command);
+  const readData = () => {
+    // have no idea why we can read from rx2164 using .getFeatureReport but can't using .read
+    const buffer = device.getFeatureReport(0xf2, 17)
+    const result = proto.recv(buffer)
+    if (result.state !== lastState) {
+      lastState = result.state
+      config.onData(result)
+    }
   }
-};
 
-Driver.prototype.open = function (callback) {
-  var cfg = this.cfg, device;
+  publicMethods.open = callback => {
 
-  var _callback = function (err) {
-    if(!err) {
-      device.on('error', this.emitError);
-      // can read events from device
-      if(this.proto._event) {
-        device.setNonBlocking(1);
-        var buffer = this.device.getFeatureReport(0xf2, 17),
-          data = this.proto.event(buffer);
-        this._state = data.state;
-        this.timer = setInterval(this.readData, cfg.readInerval);
+    const cb = err => {
+      if (!err) {
+        if (proto.recv) { // able to read events from device
+          device.setNonBlocking(1)
+          const buffer = device.getFeatureReport(0xf2, 17)
+          const { state } = proto.recv(buffer)
+          lastState = state
+          timer = setInterval(readData, config.readInterval);
+        }
+      } else {
+        device.removeListener('error', emitError)
       }
+      callback(err)
     }
-    callback(err);
-  }.bind(this);
 
-  if(cfg.debug) {
-    device = this.device = new Dummy();
-    return _callback();
+    if (isHID) { // usb device
+      try {
+        device = new HID(config.vid, config.pid)
+        device.on('error', emitError)
+      } catch (err) {
+        return cb(err)
+      }
+      return cb()
+    }
+
+    device = new SerialPort(config.port, { // serial device
+      baudrate: 9600
+    })
+
+    device.once('open', cb)
+    device.on('error', emitError)
+    device.open(err => {
+      if (err) {
+        device.removeListener('open', cb)
+        cb(err)
+      }
+    })
   }
 
-  if(this.isHID) {
+  publicMethods.close = callback => {
+    const cb = callback || function () {}
+    if (!device) { return cb() }
+    clearInterval(timer)
+    device.removeListener('error', emitError);
+
+    if (isHID) {
+    device.close()
+    callback()
+    } else {
+      device.close(callback)
+    }
+  }
+
+  publicMethods.send = (channel, command, value, callback) => {
+
+    let arr
+    if (typeof value === 'function') {
+      callback = value;
+      value = undefined;
+    }
     try {
-      device = this.device = new HID.HID(cfg.vid, cfg.pid);
+      arr = proto.send(channel, command, value)
     } catch (err) {
-      return _callback(err);
+      return callback(err)
     }
-    return _callback();
-  }
 
-  // open com-port
-  device = this.device = new SerialPort(cfg.port, {
-    baudrate: 9600
-  }, false);
-
-  device.once('open', _callback);
-  device.open(function (err) {
-    if(err) {
-      device.removeListener('open', _callback);
-      return _callback(err);
+    if (isHID) {
+      device.write(arr)
+      callback()
+    } else {
+      device.write(arr, callback)
     }
-  }.bind(this));
-
-};
-
-Driver.prototype.send = function (channel, command, value, callback) {
-
-  var arr;
-  if(typeof value === 'function') {
-    callback = value;
-    value = undefined;
   }
-  try {
-    arr = this.proto.command(channel, command, value);
-  } catch (err) {
-    return callback(err);
-  }
-  if(this.isHID) {
-    this.device.write(arr);
-    callback();
-  } else {
-    this.device.write(arr, callback);
-  }
-};
 
-Driver.prototype.close = function (callback) {
-  var device = this.device;
-  callback = callback || _.noop;
-  if(!device) { return callback(); }
-  clearInterval(this.timer);
-  device.removeListener('error', this.emitError);
-  if(this.isHID) {
-    this.device.close();
-    callback();
-  } else {
-    this.device.close(callback);
+  const promisifiedMethods = {}
+  for (let name in publicMethods) {
+    promisifiedMethods[name] = Promise.promisify(publicMethods[name])
   }
-};
+  return promisifiedMethods
+}
 
-module.exports = Driver;
+module.exports = { createDriver }
